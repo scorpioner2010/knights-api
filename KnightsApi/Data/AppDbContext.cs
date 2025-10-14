@@ -21,6 +21,11 @@ namespace KnightsApi.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Player
+            modelBuilder.Entity<Player>()
+                .HasIndex(p => p.Username)
+                .IsUnique();
+
             // Culture
             modelBuilder.Entity<Culture>().HasIndex(f => f.Code).IsUnique();
             modelBuilder.Entity<Culture>().Property(f => f.Code).IsRequired();

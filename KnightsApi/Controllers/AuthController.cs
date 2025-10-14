@@ -16,12 +16,14 @@ namespace KnightsApi.Controllers
         private readonly AppDbContext _db;
         private readonly ILogger<AuthController> _logger;
         private readonly byte[] _jwtKey;
+        private readonly string? _starterCode; // 🔹 додано: код стартового воїна з конфігу
 
         public AuthController(AppDbContext db, ILogger<AuthController> logger, IConfiguration cfg)
         {
             _db = db;
             _logger = logger;
             _jwtKey = Encoding.UTF8.GetBytes(cfg["Jwt:Key"] ?? "super_secret_key_change_me_please_32+");
+            _starterCode = cfg["Game:StarterCode"]; // 🔹 читаємо опційний код стартера
         }
 
         public class RegisterRequest
@@ -100,10 +102,28 @@ namespace KnightsApi.Controllers
             bool hasAny = _db.UserWarriors.Any(x => x.UserId == userId);
             if (hasAny) return;
 
-            // 1) спробувати конкретний відомий код
-            Warrior? starter = _db.Warriors.FirstOrDefault(v => v.Code == "ia_l1_starter");
+            // 🔹 1) спрацює явний код із конфігу (Game:StarterCode), якщо задано
+            // 🔹 2) далі намагаємося відомі стартові коди з сидера
+            // 🔹 3) фолбек: будь-який Level 1, видимий у пріоритеті, інакше найдешевший
+            Warrior? starter = null;
 
-            // 2) якщо ні — взяти будь-який видимий 1 рівня, або просто найдешевший
+            IEnumerable<string?> preferredCodes = new[]
+            {
+                _starterCode,                 // з конфіга, якщо є
+                "sam_l1_starter",             // з SeedData
+                "vik_l1_starter",             // з SeedData
+                "ia_l1_starter"               // історичний/сумісний код
+            }
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.Ordinal);
+
+            foreach (var code in preferredCodes)
+            {
+                starter = _db.Warriors.FirstOrDefault(v => v.Code == code);
+                if (starter != null) break;
+            }
+
+            // 3) якщо ні — взяти будь-який видимий 1 рівня, або просто найдешевший
             starter ??= _db.Warriors
                 .OrderBy(v => v.Level)        // Level 1 насамперед
                 .ThenByDescending(v => v.IsVisible)

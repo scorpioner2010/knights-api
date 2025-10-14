@@ -21,6 +21,15 @@ namespace KnightsApi.Controllers
             _db = db;
         }
 
+        // ✅ Безпечне читання UID без ризику 500
+        private bool TryGetCurrentUserId(out int uid)
+        {
+            uid = 0;
+            var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(idStr, out uid) && uid > 0;
+        }
+
+        // (залишаю для сумісності; не використовується далі)
         private int CurrentUserId()
         {
             var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -33,7 +42,8 @@ namespace KnightsApi.Controllers
         [HttpGet("me")]
         public IActionResult GetMyWarriors()
         {
-            int uid = CurrentUserId();
+            if (!TryGetCurrentUserId(out var uid))
+                return Unauthorized();
 
             var list = _db.UserWarriors
                 .Where(x => x.UserId == uid)
@@ -69,7 +79,8 @@ namespace KnightsApi.Controllers
         [HttpPut("me/active/{warriorId:int}")]
         public IActionResult SetActive(int warriorId)
         {
-            int uid = CurrentUserId();
+            if (!TryGetCurrentUserId(out var uid))
+                return Unauthorized();
 
             using var tx = _db.Database.BeginTransaction();
 
@@ -111,7 +122,8 @@ namespace KnightsApi.Controllers
         [HttpPost("me/buy/{code}")]
         public IActionResult BuyWarrior(string code)
         {
-            int uid = CurrentUserId();
+            if (!TryGetCurrentUserId(out var uid))
+                return Unauthorized();
 
             var player = _db.Players.FirstOrDefault(p => p.Id == uid);
             if (player == null)
@@ -156,7 +168,8 @@ namespace KnightsApi.Controllers
         [HttpPost("me/sell/{warriorId:int}")]
         public IActionResult Sell(int warriorId)
         {
-            int uid = CurrentUserId();
+            if (!TryGetCurrentUserId(out var uid))
+                return Unauthorized();
 
             using var tx = _db.Database.BeginTransaction();
 
@@ -226,7 +239,8 @@ namespace KnightsApi.Controllers
         [HttpPost("me/add-by-code/{code}")]
         public IActionResult AddByCode(string code)
         {
-            int uid = CurrentUserId();
+            if (!TryGetCurrentUserId(out var uid))
+                return Unauthorized();
 
             var warrior = _db.Warriors.FirstOrDefault(v => v.Code == code);
             if (warrior == null)
@@ -257,7 +271,8 @@ namespace KnightsApi.Controllers
         [HttpDelete("me/{warriorId:int}")]
         public IActionResult Remove(int warriorId)
         {
-            int uid = CurrentUserId();
+            if (!TryGetCurrentUserId(out var uid))
+                return Unauthorized();
 
             using var tx = _db.Database.BeginTransaction();
 
@@ -308,10 +323,11 @@ namespace KnightsApi.Controllers
         [HttpGet("xp")]
         public IActionResult GetMyWarriorsXp()
         {
-            int userId = CurrentUserId();
+            if (!TryGetCurrentUserId(out var uid))
+                return Unauthorized();
 
             var list = _db.UserWarriors
-                .Where(x => x.UserId == userId)
+                .Where(x => x.UserId == uid)
                 .Include(x => x.Warrior)
                 .Select(x => new
                 {
@@ -323,7 +339,7 @@ namespace KnightsApi.Controllers
                 .ToList();
 
             var freeXp = _db.Players
-                .Where(p => p.Id == userId)
+                .Where(p => p.Id == uid)
                 .Select(p => p.FreeXp)
                 .FirstOrDefault();
 
@@ -340,12 +356,13 @@ namespace KnightsApi.Controllers
         [HttpPost("{warriorId:int}/convert-freexp")]
         public IActionResult ConvertFreeXpToWarrior(int warriorId, [FromBody] ConvertFreeXpRequest req)
         {
-            int userId = CurrentUserId();
+            if (!TryGetCurrentUserId(out var uid))
+                return Unauthorized();
 
             if (req.Amount <= 0)
                 return BadRequest("Amount must be positive.");
 
-            var player = _db.Players.FirstOrDefault(p => p.Id == userId);
+            var player = _db.Players.FirstOrDefault(p => p.Id == uid);
             if (player == null)
                 return NotFound("Player not found.");
 
@@ -354,7 +371,7 @@ namespace KnightsApi.Controllers
 
             var uw = _db.UserWarriors
                 .Include(x => x.Warrior)
-                .FirstOrDefault(x => x.UserId == userId && x.WarriorId == warriorId);
+                .FirstOrDefault(x => x.UserId == uid && x.WarriorId == warriorId);
 
             if (uw == null)
                 return NotFound("Warrior not found or not owned.");

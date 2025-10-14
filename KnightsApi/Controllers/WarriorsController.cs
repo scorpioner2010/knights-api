@@ -16,15 +16,15 @@ namespace KnightsApi.Controllers
             _db = db;
         }
 
-        // GET /warriors?faction=iron_alliance&branch=tracked
+        // GET /warriors?culture=yamato_clan&branch=infantry
         [HttpGet]
-        public IActionResult GetAll([FromQuery] string? faction = null, [FromQuery] string? branch = null)
+        public IActionResult GetAll([FromQuery] string? culture = null, [FromQuery] string? branch = null)
         {
             IQueryable<Warrior> q = _db.Warriors.Include(v => v.Culture).AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(faction))
+            if (!string.IsNullOrWhiteSpace(culture))
             {
-                string fc = faction.Trim();
+                string fc = culture.Trim();
                 q = q.Where(v => v.Culture != null && v.Culture.Code == fc);
             }
 
@@ -47,7 +47,7 @@ namespace KnightsApi.Controllers
                     Class = v.Class.ToString(),
                     Level = v.Level,
                     PurchaseCost = v.PurchaseCost,
-                    IsVisible = v.IsVisible, // 🔹 додано
+                    IsVisible = v.IsVisible,
 
                     HP = v.HP,
                     Damage = v.Damage,
@@ -84,7 +84,7 @@ namespace KnightsApi.Controllers
                 Class = v.Class.ToString(),
                 Level = v.Level,
                 PurchaseCost = v.PurchaseCost,
-                IsVisible = v.IsVisible, // 🔹 додано
+                IsVisible = v.IsVisible,
 
                 HP = v.HP,
                 Damage = v.Damage,
@@ -117,7 +117,7 @@ namespace KnightsApi.Controllers
                 Class = v.Class.ToString(),
                 Level = v.Level,
                 PurchaseCost = v.PurchaseCost,
-                IsVisible = v.IsVisible, // 🔹 додано
+                IsVisible = v.IsVisible,
 
                 HP = v.HP,
                 Damage = v.Damage,
@@ -200,17 +200,17 @@ namespace KnightsApi.Controllers
 
         // --- GRAPH (для дерева розвитку) ---
 
-        // GET /warriors/graph?faction=iron_alliance
+        // GET /warriors/graph?culture=yamato_clan
         [HttpGet("graph")]
-        public IActionResult GetGraph([FromQuery] string? faction = null)
+        public IActionResult GetGraph([FromQuery] string? culture = null)
         {
             var vq = _db.Warriors
                 .Include(v => v.Culture)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(faction))
+            if (!string.IsNullOrWhiteSpace(culture))
             {
-                string fc = faction.Trim();
+                string fc = culture.Trim();
                 vq = vq.Where(v => v.Culture != null && v.Culture.Code == fc);
             }
 
@@ -224,7 +224,7 @@ namespace KnightsApi.Controllers
                     level = v.Level,
                     branch = v.Branch,
                     cultureCode = v.Culture != null ? v.Culture.Code : string.Empty,
-                    isVisible = v.IsVisible // 🔹 додано
+                    isVisible = v.IsVisible
                 })
                 .ToList();
 
@@ -258,7 +258,7 @@ namespace KnightsApi.Controllers
         public string Class { get; set; } = string.Empty;
         public int Level { get; set; }
         public int PurchaseCost { get; set; }
-        public bool IsVisible { get; set; } // 🔹 нове поле
+        public bool IsVisible { get; set; }
 
         public int HP { get; set; }
         public int Damage { get; set; }

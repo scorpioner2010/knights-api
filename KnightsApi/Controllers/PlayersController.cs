@@ -20,22 +20,26 @@ namespace KnightsApi.Controllers
             _db = db;
         }
 
-        private int CurrentUserId()
+        // М'яке читання поточного користувача без ризику 500:
+        // повертає true/false і uid через out; при невдачі — клієнту віддамо 401.
+        private bool TryGetCurrentUserId(out int uid)
         {
+            uid = 0;
             var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.Parse(idStr);
+            return int.TryParse(idStr, out uid) && uid > 0;
         }
 
         [HttpGet("me")]
         public IActionResult GetMe()
         {
-            int uid = CurrentUserId();
+            if (!TryGetCurrentUserId(out var uid))
+                return Unauthorized();
 
             var p = _db.Players.FirstOrDefault(x => x.Id == uid);
             if (p == null) return NotFound();
 
             var owned = _db.UserWarriors
-                .Where(u => u.UserId == uid)                 // ВАЖЛИВО: саме UserId 
+                .Where(u => u.UserId == uid)                 // ВАЖЛИВО: саме UserId
                 .Include(u => u.Warrior)
                 .AsNoTracking()
                 .ToList();
@@ -72,16 +76,41 @@ namespace KnightsApi.Controllers
         [HttpPut("me/active/{warriorId:int}")]
         public IActionResult SetActive(int warriorId)
         {
-            int uid = CurrentUserId();
+            if (!TryGetCurrentUserId(out var uid))
+                return Unauthorized();
 
-            var owned = _db.UserWarriors.Where(x => x.UserId == uid).ToList();
+            // Використовуємо безпечний порядок оновлень як у UserWarriorsController,
+            // щоб не впертись у фільтрований унікальний індекс (UserId, IsActive=TRUE).
+            using var tx = _db.Database.BeginTransaction();
+
+            var owned = _db.UserWarriors
+                .Where(x => x.UserId == uid)
+                .ToList();
+
             var target = owned.FirstOrDefault(x => x.WarriorId == warriorId);
-            if (target == null) return NotFound("User does not own this warrior.");
+            if (target == null)
+                return NotFound("User does not own this warrior.");
 
-            foreach (var uw in owned)
-                uw.IsActive = (uw.WarriorId == warriorId);
+            // Якщо вже активний — просто повертаємо OK
+            if (target.IsActive)
+            {
+                tx.Commit();
+                return Ok(new { ok = true, activeWarriorId = warriorId });
+            }
 
+            // 1) зняти активний, якщо є, і зберегти (щоб не було 23505)
+            var currentActive = owned.FirstOrDefault(x => x.IsActive);
+            if (currentActive != null)
+            {
+                currentActive.IsActive = false;
+                _db.SaveChanges();
+            }
+
+            // 2) позначити ціль активним і зберегти
+            target.IsActive = true;
             _db.SaveChanges();
+
+            tx.Commit();
             return Ok(new { ok = true, activeWarriorId = warriorId });
         }
     }
