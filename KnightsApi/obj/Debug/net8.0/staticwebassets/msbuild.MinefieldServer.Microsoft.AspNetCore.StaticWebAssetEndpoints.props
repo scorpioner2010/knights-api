@@ -1,0 +1,16 @@
+﻿<Project>
+  <ItemGroup>
+    <StaticWebAssetEndpoint Include="_content/MinefieldServer/admin/logview.html">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\admin\logview.html'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-9QD6s3lMn0kYwc7wSFg7YmQIun9ORKE32j69\u002BpRBLZc="}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"1882"},{"Name":"Content-Type","Value":"text/html"},{"Name":"ETag","Value":"\u00229QD6s3lMn0kYwc7wSFg7YmQIun9ORKE32j69\u002BpRBLZc=\u0022"},{"Name":"Last-Modified","Value":"Thu, 01 May 2025 12:52:29 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
+    <StaticWebAssetEndpoint Include="_content/MinefieldServer/admin/logview.tqbuaooh9c.html">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\admin\logview.html'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"tqbuaooh9c"},{"Name":"integrity","Value":"sha256-9QD6s3lMn0kYwc7wSFg7YmQIun9ORKE32j69\u002BpRBLZc="},{"Name":"label","Value":"_content/MinefieldServer/admin/logview.html"}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"1882"},{"Name":"Content-Type","Value":"text/html"},{"Name":"ETag","Value":"\u00229QD6s3lMn0kYwc7wSFg7YmQIun9ORKE32j69\u002BpRBLZc=\u0022"},{"Name":"Last-Modified","Value":"Thu, 01 May 2025 12:52:29 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
+  </ItemGroup>
+</Project>

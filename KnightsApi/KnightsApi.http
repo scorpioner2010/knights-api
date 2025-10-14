@@ -1,0 +1,19 @@
+@Host = http://localhost:5220
+
+### Register
+POST {{Host}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "test",
+  "password": "123456"
+}
+
+### Login
+POST {{Host}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "test",
+  "password": "123456"
+}
