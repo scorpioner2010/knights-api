@@ -1,8 +1,8 @@
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
-using WarOfMachines.Data;
+using KnightsApi.Data;
 
-namespace WarOfMachines.Controllers
+namespace KnightsApi.Controllers
 {
     [ApiController]
     [Route("maps")]

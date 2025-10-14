@@ -1,23 +1,22 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WarOfMachines.Data;
-using WarOfMachines.Models;
+using KnightsApi.Data;
+using KnightsApi.Models;
 
-namespace WarOfMachines.Controllers
+namespace KnightsApi.Controllers
 {
     [ApiController]
-    [Route("user-vehicles")]
+    [Route("user-warriors")]
     [Authorize]
-    public class UserUnitsController : ControllerBase
+    public class UserWarriorsController : ControllerBase
     {
         private readonly AppDbContext _db;
 
-        public UserUnitsController(AppDbContext db)
+        public UserWarriorsController(AppDbContext db)
         {
             _db = db;
         }
@@ -29,22 +28,22 @@ namespace WarOfMachines.Controllers
         }
 
         // ========================================
-        // GET /user-vehicles/me
+        // GET /user-warriors/me
         // ========================================
         [HttpGet("me")]
-        public IActionResult GetMyUnits()
+        public IActionResult GetMyWarriors()
         {
             int uid = CurrentUserId();
 
-            var list = _db.UserUnits
+            var list = _db.UserWarriors
                 .Where(x => x.UserId == uid)
-                .Include(x => x.Unit)
-                .Select(x => new UserVehicleDto
+                .Include(x => x.Warrior)
+                .Select(x => new UserWarriorDto
                 {
                     Id = x.Id,
-                    VehicleId = x.UnitId,
-                    VehicleCode = x.Unit != null ? x.Unit.Code : string.Empty,
-                    VehicleName = x.Unit != null ? x.Unit.Name : string.Empty,
+                    WarriorId = x.WarriorId,
+                    WarriorCode = x.Warrior != null ? x.Warrior.Code : string.Empty,
+                    WarriorName = x.Warrior != null ? x.Warrior.Name : string.Empty,
                     Xp = x.Xp,
                     IsActive = x.IsActive
                 })
@@ -58,35 +57,35 @@ namespace WarOfMachines.Controllers
             return Ok(new
             {
                 FreeXp = freeXp,
-                Vehicles = list
+                Warriors = list
             });
         }
 
         // ========================================
-        // PUT /user-vehicles/me/active/{vehicleId}
-        // Уникаємо 23505 на IX_UserVehicles_UserId_IsActive:
+        // PUT /user-warriors/me/active/{warriorId}
+        // Уникаємо 23505 на IX_UserWarriors_UserId_IsActive:
         // знімаємо старий TRUE -> SaveChanges -> виставляємо новий TRUE -> SaveChanges
         // ========================================
-        [HttpPut("me/active/{unitId:int}")]
-        public IActionResult SetActive(int unitId)
+        [HttpPut("me/active/{warriorId:int}")]
+        public IActionResult SetActive(int warriorId)
         {
             int uid = CurrentUserId();
 
             using var tx = _db.Database.BeginTransaction();
 
-            var owned = _db.UserUnits
+            var owned = _db.UserWarriors
                 .Where(x => x.UserId == uid)
                 .ToList();
 
-            var target = owned.FirstOrDefault(x => x.UnitId == unitId);
+            var target = owned.FirstOrDefault(x => x.WarriorId == warriorId);
             if (target == null)
-                return NotFound("User does not own this vehicle.");
+                return NotFound("User does not own this warrior.");
 
             // Якщо вже активний — все ок
             if (target.IsActive)
             {
                 tx.Commit();
-                return Ok(new { ok = true, activeUnitId = unitId });
+                return Ok(new { ok = true, activeWarriorId = warriorId });
             }
 
             // 1) зняти активний, якщо є
@@ -102,15 +101,15 @@ namespace WarOfMachines.Controllers
             _db.SaveChanges();
 
             tx.Commit();
-            return Ok(new { ok = true, activeUnitId = unitId });
+            return Ok(new { ok = true, activeWarriorId = warriorId });
         }
 
         // ========================================
-        // POST /user-vehicles/me/buy/{code}
-        // Покупка за кодом каталогу Vehicle
+        // POST /user-warriors/me/buy/{code}
+        // Покупка за кодом каталогу Warrior
         // ========================================
         [HttpPost("me/buy/{code}")]
-        public IActionResult BuyUnit(string code)
+        public IActionResult BuyWarrior(string code)
         {
             int uid = CurrentUserId();
 
@@ -118,87 +117,87 @@ namespace WarOfMachines.Controllers
             if (player == null)
                 return NotFound("Player not found.");
 
-            var vehicle = _db.Units.FirstOrDefault(v => v.Code == code);
-            if (vehicle == null)
-                return NotFound("Vehicle code not found.");
+            var warrior = _db.Warriors.FirstOrDefault(v => v.Code == code);
+            if (warrior == null)
+                return NotFound("Warrior code not found.");
 
-            if (_db.UserUnits.Any(x => x.UserId == uid && x.UnitId == vehicle.Id))
-                return Conflict("Vehicle already owned.");
+            if (_db.UserWarriors.Any(x => x.UserId == uid && x.WarriorId == warrior.Id))
+                return Conflict("Warrior already owned.");
 
-            if (player.Coins < vehicle.PurchaseCost)
+            if (player.Coins < warrior.PurchaseCost)
                 return BadRequest("Not enough Bolts.");
 
-            player.Coins -= vehicle.PurchaseCost;
+            player.Coins -= warrior.PurchaseCost;
 
-            var uv = new UserUnit
+            var uw = new UserWarrior
             {
                 UserId = uid,
-                UnitId = vehicle.Id,
+                WarriorId = warrior.Id,
                 Xp = 0,
                 IsActive = false
             };
 
-            _db.UserUnits.Add(uv);
+            _db.UserWarriors.Add(uw);
             _db.SaveChanges();
 
             return Ok(new
             {
                 ok = true,
-                userVehicleId = uv.Id,
-                vehicleId = uv.UnitId,
+                userWarriorId = uw.Id,
+                warriorId = uw.WarriorId,
                 newBolts = player.Coins
             });
         }
 
         // ========================================
-        // POST /user-vehicles/me/sell/{vehicleId}
-        // Продає техніку за 50% від PurchaseCost (безпечний порядок апдейтів)
+        // POST /user-warriors/me/sell/{warriorId}
+        // Продає воїна за 50% від PurchaseCost (безпечний порядок апдейтів)
         // ========================================
-        [HttpPost("me/sell/{vehicleId:int}")]
-        public IActionResult Sell(int vehicleId)
+        [HttpPost("me/sell/{warriorId:int}")]
+        public IActionResult Sell(int warriorId)
         {
             int uid = CurrentUserId();
 
             using var tx = _db.Database.BeginTransaction();
 
-            var owned = _db.UserUnits
+            var owned = _db.UserWarriors
                 .Where(x => x.UserId == uid)
-                .Include(x => x.Unit)
+                .Include(x => x.Warrior)
                 .ToList();
 
             if (owned.Count <= 1)
-                return BadRequest("Cannot sell your last remaining vehicle.");
+                return BadRequest("Cannot sell your last remaining warrior.");
 
-            var uv = owned.FirstOrDefault(x => x.UnitId == vehicleId);
-            if (uv == null)
-                return NotFound("Vehicle not found.");
+            var uw = owned.FirstOrDefault(x => x.WarriorId == warriorId);
+            if (uw == null)
+                return NotFound("Warrior not found.");
 
-            if (uv.Unit == null)
-                return BadRequest("Vehicle data is missing.");
+            if (uw.Warrior == null)
+                return BadRequest("Warrior data is missing.");
 
             var player = _db.Players.FirstOrDefault(p => p.Id == uid);
             if (player == null)
                 return NotFound("Player not found.");
 
-            int refund = Math.Max(0, uv.Unit.PurchaseCost / 2);
+            int refund = Math.Max(0, uw.Warrior.PurchaseCost / 2);
 
             // Якщо активний — спершу зняти активність, зберегти
-            bool wasActive = uv.IsActive;
+            bool wasActive = uw.IsActive;
             if (wasActive)
             {
-                uv.IsActive = false;
+                uw.IsActive = false;
                 _db.SaveChanges(); // зняли TRUE, індекс щасливий
             }
 
             // Видалити та повернути болти
-            _db.UserUnits.Remove(uv);
+            _db.UserWarriors.Remove(uw);
             player.Coins += refund;
             _db.SaveChanges();
 
             // Якщо продавали активного — призначити інший активним і зберегти
             if (wasActive)
             {
-                var replacement = _db.UserUnits
+                var replacement = _db.UserWarriors
                     .Where(x => x.UserId == uid)
                     .OrderByDescending(x => x.Xp) // або інша твоя логіка вибору
                     .FirstOrDefault();
@@ -214,14 +213,14 @@ namespace WarOfMachines.Controllers
             return Ok(new
             {
                 ok = true,
-                soldVehicleId = vehicleId,
+                soldWarriorId = warriorId,
                 refundBolts = refund,
                 newBolts = player.Coins
             });
         }
 
         // ========================================
-        // POST /user-vehicles/me/add-by-code/{code}
+        // POST /user-warriors/me/add-by-code/{code}
         // (dev/debug) Додає безкоштовно
         // ========================================
         [HttpPost("me/add-by-code/{code}")]
@@ -229,65 +228,65 @@ namespace WarOfMachines.Controllers
         {
             int uid = CurrentUserId();
 
-            var vehicle = _db.Units.FirstOrDefault(v => v.Code == code);
-            if (vehicle == null)
-                return NotFound("Vehicle code not found.");
+            var warrior = _db.Warriors.FirstOrDefault(v => v.Code == code);
+            if (warrior == null)
+                return NotFound("Warrior code not found.");
 
-            bool already = _db.UserUnits.Any(x => x.UserId == uid && x.UnitId == vehicle.Id);
+            bool already = _db.UserWarriors.Any(x => x.UserId == uid && x.WarriorId == warrior.Id);
             if (already)
-                return Conflict("Vehicle already owned.");
+                return Conflict("Warrior already owned.");
 
-            var uv = new UserUnit
+            var uw = new UserWarrior
             {
                 UserId = uid,
-                UnitId = vehicle.Id,
+                WarriorId = warrior.Id,
                 Xp = 0,
                 IsActive = false
             };
 
-            _db.UserUnits.Add(uv);
+            _db.UserWarriors.Add(uw);
             _db.SaveChanges();
 
-            return Ok(new { ok = true, userVehicleId = uv.Id, vehicleId = uv.UnitId });
+            return Ok(new { ok = true, userWarriorId = uw.Id, warriorId = uw.WarriorId });
         }
 
         // ========================================
-        // DELETE /user-vehicles/me/{vehicleId}
-        // Жорстке видалення (з урахуванням активної) — безпечний порядок
+        // DELETE /user-warriors/me/{warriorId}
+        // Жорстке видалення (з урахуванням активного) — безпечний порядок
         // ========================================
-        [HttpDelete("me/{vehicleId:int}")]
-        public IActionResult Remove(int vehicleId)
+        [HttpDelete("me/{warriorId:int}")]
+        public IActionResult Remove(int warriorId)
         {
             int uid = CurrentUserId();
 
             using var tx = _db.Database.BeginTransaction();
 
-            var owned = _db.UserUnits
+            var owned = _db.UserWarriors
                 .Where(x => x.UserId == uid)
-                .Include(x => x.Unit)
+                .Include(x => x.Warrior)
                 .ToList();
 
             if (owned.Count <= 1)
-                return BadRequest("Cannot sell your last remaining vehicle.");
+                return BadRequest("Cannot remove your last remaining warrior.");
 
-            var uv = owned.FirstOrDefault(x => x.UnitId == vehicleId);
-            if (uv == null)
-                return NotFound("Vehicle not found.");
+            var uw = owned.FirstOrDefault(x => x.WarriorId == warriorId);
+            if (uw == null)
+                return NotFound("Warrior not found.");
 
-            bool wasActive = uv.IsActive;
+            bool wasActive = uw.IsActive;
 
             if (wasActive)
             {
-                uv.IsActive = false;
+                uw.IsActive = false;
                 _db.SaveChanges(); // зняти TRUE до будь-яких інших рухів
             }
 
-            _db.UserUnits.Remove(uv);
+            _db.UserWarriors.Remove(uw);
             _db.SaveChanges();
 
             if (wasActive)
             {
-                var replacement = _db.UserUnits
+                var replacement = _db.UserWarriors
                     .Where(x => x.UserId == uid)
                     .OrderByDescending(x => x.Xp)
                     .FirstOrDefault();
@@ -300,24 +299,24 @@ namespace WarOfMachines.Controllers
             }
 
             tx.Commit();
-            return Ok(new { ok = true, soldVehicleId = vehicleId });
+            return Ok(new { ok = true, removedWarriorId = warriorId });
         }
 
         // ========================================
-        // GET /user-vehicles/xp
+        // GET /user-warriors/xp
         // ========================================
         [HttpGet("xp")]
-        public IActionResult GetMyVehiclesXp()
+        public IActionResult GetMyWarriorsXp()
         {
             int userId = CurrentUserId();
 
-            var list = _db.UserUnits
+            var list = _db.UserWarriors
                 .Where(x => x.UserId == userId)
-                .Include(x => x.Unit)
+                .Include(x => x.Warrior)
                 .Select(x => new
                 {
-                    VehicleId = x.UnitId,
-                    VehicleName = x.Unit != null ? x.Unit.Name : "",
+                    WarriorId = x.WarriorId,
+                    WarriorName = x.Warrior != null ? x.Warrior.Name : "",
                     x.Xp,
                     x.IsActive
                 })
@@ -331,15 +330,15 @@ namespace WarOfMachines.Controllers
             return Ok(new
             {
                 FreeXp = freeXp,
-                Vehicles = list
+                Warriors = list
             });
         }
 
         // ========================================
-        // POST /user-vehicles/{vehicleId}/convert-freexp
+        // POST /user-warriors/{warriorId}/convert-freexp
         // ========================================
-        [HttpPost("{vehicleId:int}/convert-freexp")]
-        public IActionResult ConvertFreeXpToVehicle(int vehicleId, [FromBody] ConvertFreeXpRequest req)
+        [HttpPost("{warriorId:int}/convert-freexp")]
+        public IActionResult ConvertFreeXpToWarrior(int warriorId, [FromBody] ConvertFreeXpRequest req)
         {
             int userId = CurrentUserId();
 
@@ -353,25 +352,25 @@ namespace WarOfMachines.Controllers
             if (player.FreeXp < req.Amount)
                 return BadRequest("Not enough Free XP.");
 
-            var uv = _db.UserUnits
-                .Include(x => x.Unit)
-                .FirstOrDefault(x => x.UserId == userId && x.UnitId == vehicleId);
+            var uw = _db.UserWarriors
+                .Include(x => x.Warrior)
+                .FirstOrDefault(x => x.UserId == userId && x.WarriorId == warriorId);
 
-            if (uv == null)
-                return NotFound("Vehicle not found or not owned.");
+            if (uw == null)
+                return NotFound("Warrior not found or not owned.");
 
             player.FreeXp -= req.Amount;
-            uv.Xp += req.Amount;
+            uw.Xp += req.Amount;
 
             _db.SaveChanges();
 
             return Ok(new
             {
                 ok = true,
-                vehicleId = uv.UnitId,
-                vehicleName = uv.Unit?.Name,
+                warriorId = uw.WarriorId,
+                warriorName = uw.Warrior?.Name,
                 addedXp = req.Amount,
-                newVehicleXp = uv.Xp,
+                newWarriorXp = uw.Xp,
                 remainingFreeXp = player.FreeXp
             });
         }
@@ -379,12 +378,12 @@ namespace WarOfMachines.Controllers
         // ========================================
         // DTOs
         // ========================================
-        public class UserVehicleDto
+        public class UserWarriorDto
         {
             public int Id { get; set; }
-            public int VehicleId { get; set; }
-            public string VehicleCode { get; set; } = string.Empty;
-            public string VehicleName { get; set; } = string.Empty;
+            public int WarriorId { get; set; }
+            public string WarriorCode { get; set; } = string.Empty;
+            public string WarriorName { get; set; } = string.Empty;
             public int Xp { get; set; }
             public bool IsActive { get; set; }
         }

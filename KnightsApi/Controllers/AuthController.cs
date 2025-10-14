@@ -4,10 +4,10 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using WarOfMachines.Data;
-using WarOfMachines.Models;
+using KnightsApi.Data;
+using KnightsApi.Models;
 
-namespace WarOfMachines.Controllers
+namespace KnightsApi.Controllers
 {
     [ApiController]
     [Route("auth")]
@@ -68,7 +68,7 @@ namespace WarOfMachines.Controllers
             _db.Players.Add(player);
             _db.SaveChanges();
 
-            EnsureStarterVehicle(player.Id);
+            EnsureStarterWarrior(player.Id);
 
             var token = IssueJwt(player);
             return Ok(new TokenResponse { Token = token });
@@ -86,8 +86,8 @@ namespace WarOfMachines.Controllers
             bool ok = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
             if (!ok) return Unauthorized("Invalid username or password.");
 
-            // auto-heal для старих юзерів без стартової техніки
-            EnsureStarterVehicle(user.Id);
+            // auto-heal для старих юзерів без стартового воїна
+            EnsureStarterWarrior(user.Id);
 
             var token = IssueJwt(user);
             return Ok(new TokenResponse { Token = token });
@@ -95,31 +95,31 @@ namespace WarOfMachines.Controllers
 
         // ===== helpers =====
 
-        private void EnsureStarterVehicle(int userId)
+        private void EnsureStarterWarrior(int userId)
         {
-            bool hasAny = _db.UserUnits.Any(x => x.UserId == userId);
+            bool hasAny = _db.UserWarriors.Any(x => x.UserId == userId);
             if (hasAny) return;
 
             // 1) спробувати конкретний відомий код
-            Unit? starter = _db.Units.FirstOrDefault(v => v.Code == "ia_l1_starter");
+            Warrior? starter = _db.Warriors.FirstOrDefault(v => v.Code == "ia_l1_starter");
 
             // 2) якщо ні — взяти будь-який видимий 1 рівня, або просто найдешевший
-            starter ??= _db.Units
+            starter ??= _db.Warriors
                 .OrderBy(v => v.Level)        // Level 1 насамперед
                 .ThenByDescending(v => v.IsVisible)
                 .ThenBy(v => v.PurchaseCost)
                 .FirstOrDefault();
 
-            if (starter == null) return; // у БД нема техніки — нічого не робимо
+            if (starter == null) return; // у БД нема воїнів — нічого не робимо
 
-            var uv = new UserUnit
+            var uw = new UserWarrior
             {
                 UserId = userId,
-                UnitId = starter.Id,
+                WarriorId = starter.Id,
                 IsActive = true,
                 Xp = 0
             };
-            _db.UserUnits.Add(uv);
+            _db.UserWarriors.Add(uw);
             _db.SaveChanges();
         }
 

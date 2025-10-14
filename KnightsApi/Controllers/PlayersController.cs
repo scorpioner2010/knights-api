@@ -4,9 +4,9 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WarOfMachines.Data;
+using KnightsApi.Data;
 
-namespace WarOfMachines.Controllers
+namespace KnightsApi.Controllers
 {
     [ApiController]
     [Route("players")]
@@ -34,9 +34,9 @@ namespace WarOfMachines.Controllers
             var p = _db.Players.FirstOrDefault(x => x.Id == uid);
             if (p == null) return NotFound();
 
-            var owned = _db.UserUnits
-                .Where(u => u.UserId == uid)                 // ВАЖЛИВО: саме UserId
-                .Include(u => u.Unit)
+            var owned = _db.UserWarriors
+                .Where(u => u.UserId == uid)                 // ВАЖЛИВО: саме UserId 
+                .Include(u => u.Warrior)
                 .AsNoTracking()
                 .ToList();
 
@@ -52,15 +52,15 @@ namespace WarOfMachines.Controllers
                 Gold = p.Gold,
                 FreeXp = p.FreeXp,
 
-                ActiveUnitId = active?.UnitId ?? 0,
-                ActiveUnitCode = active?.Unit?.Code ?? string.Empty,
-                ActiveUnitName = active?.Unit?.Name ?? string.Empty,
+                ActiveWarriorId = active?.WarriorId ?? 0,
+                ActiveWarriorCode = active?.Warrior?.Code ?? string.Empty,
+                ActiveWarriorName = active?.Warrior?.Name ?? string.Empty,
 
-                OwnedVehicles = owned.Select(v => new OwnedVehicleDto
+                OwnedWarriors = owned.Select(v => new OwnedWarriorDto
                 {
-                    UnitId = v.UnitId,
-                    Code = v.Unit?.Code ?? string.Empty,
-                    Name = v.Unit?.Name ?? string.Empty,
+                    WarriorId = v.WarriorId,
+                    Code = v.Warrior?.Code ?? string.Empty,
+                    Name = v.Warrior?.Name ?? string.Empty,
                     IsActive = v.IsActive,
                     Xp = v.Xp
                 }).ToList()
@@ -69,20 +69,20 @@ namespace WarOfMachines.Controllers
             return Ok(dto);
         }
 
-        [HttpPut("me/active/{vehicleId:int}")]
-        public IActionResult SetActive(int vehicleId)
+        [HttpPut("me/active/{warriorId:int}")]
+        public IActionResult SetActive(int warriorId)
         {
             int uid = CurrentUserId();
 
-            var owned = _db.UserUnits.Where(x => x.UserId == uid).ToList();
-            var target = owned.FirstOrDefault(x => x.UnitId == vehicleId);
-            if (target == null) return NotFound("User does not own this vehicle.");
+            var owned = _db.UserWarriors.Where(x => x.UserId == uid).ToList();
+            var target = owned.FirstOrDefault(x => x.WarriorId == warriorId);
+            if (target == null) return NotFound("User does not own this warrior.");
 
-            foreach (var uv in owned)
-                uv.IsActive = (uv.UnitId == vehicleId);
+            foreach (var uw in owned)
+                uw.IsActive = (uw.WarriorId == warriorId);
 
             _db.SaveChanges();
-            return Ok(new { ok = true, activeVehicleId = vehicleId });
+            return Ok(new { ok = true, activeWarriorId = warriorId });
         }
     }
 
@@ -96,16 +96,16 @@ namespace WarOfMachines.Controllers
         public int Gold { get; set; }
         public int FreeXp { get; set; }
 
-        public int ActiveUnitId { get; set; }
-        public string ActiveUnitCode { get; set; } = "";
-        public string ActiveUnitName { get; set; } = "";
+        public int ActiveWarriorId { get; set; }
+        public string ActiveWarriorCode { get; set; } = "";
+        public string ActiveWarriorName { get; set; } = "";
 
-        public List<OwnedVehicleDto> OwnedVehicles { get; set; } = new();
+        public List<OwnedWarriorDto> OwnedWarriors { get; set; } = new();
     }
 
-    public class OwnedVehicleDto
+    public class OwnedWarriorDto
     {
-        public int UnitId { get; set; }
+        public int WarriorId { get; set; }
         public string Code { get; set; } = "";
         public string Name { get; set; } = "";
         public bool IsActive { get; set; }

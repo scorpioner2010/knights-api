@@ -2,10 +2,10 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace WarOfMachines.Models
+namespace KnightsApi.Models
 {
-    [Table("UserVehicles")]
-    public class UserUnit
+    [Table("UserWarriors")]
+    public class UserWarrior
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -15,7 +15,7 @@ namespace WarOfMachines.Models
         public int UserId { get; set; }
 
         [Required]
-        public int UnitId { get; set; }
+        public int WarriorId { get; set; }
 
         [Required]
         public bool IsActive { get; set; } = false;
@@ -27,7 +27,7 @@ namespace WarOfMachines.Models
         [ForeignKey(nameof(UserId))]
         public virtual Player? User { get; set; }
 
-        [ForeignKey(nameof(UnitId))]
-        public virtual Unit? Unit { get; set; }
+        [ForeignKey(nameof(WarriorId))]
+        public virtual Warrior? Warrior { get; set; }
     }
 }

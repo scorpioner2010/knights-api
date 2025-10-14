@@ -1,28 +1,28 @@
 using System;
 using System.Linq;
-using WarOfMachines.Models;
+using KnightsApi.Models;
 
-namespace WarOfMachines.Data
+namespace KnightsApi.Data
 {
     public static class SeedData
     {
         public static void Initialize(AppDbContext db)
         {
-            // --- Factions ---
-            var iron = db.Cultures.FirstOrDefault(f => f.Code == "iron_alliance")
+            // --- Cultures ---
+            var yamato = db.Cultures.FirstOrDefault(f => f.Code == "yamato_clan")
                        ?? db.Cultures.Add(new Culture
                        {
-                           Code = "iron_alliance",
-                           Name = "Iron Alliance",
-                           Description = "Veteran pilots in armored warframes forged for frontal assaults."
+                           Code = "yamato_clan",
+                           Name = "Yamato Clan",
+                           Description = "Ancient samurai of the eastern provinces — disciplined swordmasters, mounted lancers and a code of honour forged in centuries of ceremony and combat."
                        }).Entity;
 
-            var nova = db.Cultures.FirstOrDefault(f => f.Code == "nova_syndicate")
+            var nordic = db.Cultures.FirstOrDefault(f => f.Code == "nordic_clan")
                        ?? db.Cultures.Add(new Culture
                        {
-                           Code = "nova_syndicate",
-                           Name = "Nova Syndicate",
-                           Description = "A covert network fielding agile, high-tech combat machines."
+                           Code = "nordic_clan",
+                           Name = "Nordic Clan",
+                           Description = "Hardy northern warriors — raiders and shield-bearers who value ferocity and endurance, famed for their axes, longships and battle-songs."
                        }).Entity;
 
             db.SaveChanges();
@@ -31,189 +31,213 @@ namespace WarOfMachines.Data
             if (!db.Maps.Any())
             {
                 db.Maps.AddRange(
-                    new Map { Code = "demo_map", Name = "Demo Yard", Description = "Training pit for rookie pilots." },
-                    new Map { Code = "steel_arena", Name = "Steel Arena", Description = "Circular proving grounds with scattered cover." }
+                    new Map { Code = "jousting_field", Name = "Jousting Field", Description = "Training ground for new recruits — open, flat field for drills and contests." },
+                    new Map { Code = "tournament_grounds", Name = "Tournament Grounds", Description = "Large tournament arena with earthworks and spectator stands." }
                 );
                 db.SaveChanges();
             }
 
-            // ------- Локальні хелпери (ідемпотентні) -------
-            Unit EnsureUnit(Unit v)
+            // ------- Helpers (idempotent) -------
+            Warrior EnsureWarrior(Warrior v)
             {
-                var existing = db.Units.FirstOrDefault(x => x.Code == v.Code);
+                var existing = db.Warriors.FirstOrDefault(x => x.Code == v.Code);
                 if (existing != null) return existing;
-                db.Units.Add(v);
+                db.Warriors.Add(v);
                 db.SaveChanges();
                 return v;
             }
 
             void EnsureLink(int predecessorId, int successorId, int requiredXp)
             {
-                bool exists = db.VehicleResearchRequirements
-                    .Any(r => r.PredecessorUnitId == predecessorId && r.SuccessorUnitId == successorId);
+                bool exists = db.WarriorResearchRequirements
+                    .Any(r => r.PredecessorWarriorId == predecessorId && r.SuccessorWarriorId == successorId);
                 if (exists) return;
 
-                db.VehicleResearchRequirements.Add(new UnitResearchRequirement
+                db.WarriorResearchRequirements.Add(new WarriorResearchRequirement
                 {
-                    PredecessorUnitId = predecessorId,
-                    SuccessorUnitId = successorId,
+                    PredecessorWarriorId = predecessorId,
+                    SuccessorWarriorId = successorId,
                     RequiredXpOnPredecessor = requiredXp
                 });
                 db.SaveChanges();
             }
 
-            // --- Vehicles (ідемпотентно; без if (!db.Vehicles.Any())) ---
+            // --- Yamato Clan (samurai) ---
+            // L1 starter
+            var samStarter = db.Warriors.FirstOrDefault(v => v.Code == "sam_l1_starter")
+                             ?? EnsureWarrior(new Warrior
+                             {
+                                 Code = "sam_l1_starter",
+                                 Name = "Yamato Squire",
+                                 CultureId = yamato.Id,
+                                 Branch = "infantry",
+                                 Class = WarriorClass.Light,
+                                 Level = 1,
+                                 PurchaseCost = 0,
 
-            // Iron Alliance (tracked) — L1 + три L2
-            var iaStarter = db.Units.FirstOrDefault(v => v.Code == "ia_l1_starter")
-                            ?? EnsureUnit(new Unit
-                            {
-                                Code = "ia_l1_starter",
-                                Name = "IA Skirmisher",
-                                CultureId = iron.Id,
-                                Branch = "tracked",
-                                Class = UnitClass.Light,
-                                Level = 1,
-                                PurchaseCost = 0,
+                                 HP = 110,
+                                 Damage = 14,
+                                 Accuracy = 0.92f,
+                                 Speed = 6.5f,
+                                 Acceleration = 3.8f,
+                                 TraverseSpeed = 36f,
+                                 Armor = 30,
+                                 IsVisible = true
+                             });
 
-                                HP = 120, Damage = 12,
-                               Accuracy = 0.85f,
-                                Speed = 6.0f, Acceleration = 3.5f, TraverseSpeed = 35f, 
-                                Armor = 50,
-                                IsVisible = true
-                            });
-
-            var iaL2Scout = EnsureUnit(new Unit
+            // L2 options
+            var samRonin = EnsureWarrior(new Warrior
             {
-                Code = "ia_l2_scout",
-                Name = "IA Strider",
-                CultureId = iron.Id,
-                Branch = "tracked",
-                Class = UnitClass.Light,
+                Code = "sam_l2_ronin",
+                Name = "Ronin Scout",
+                CultureId = yamato.Id,
+                Branch = "infantry",
+                Class = WarriorClass.Light,
                 Level = 2,
-                PurchaseCost = 5000,
-                HP = 150, Damage = 16,
-               Accuracy = 0.87f,
-                Speed = 7.0f, Acceleration = 3.8f, TraverseSpeed = 38f,
-                Armor = 55, 
+                PurchaseCost = 4500,
+                HP = 130,
+                Damage = 18,
+                Accuracy = 0.94f,
+                Speed = 7.4f,
+                Acceleration = 4.2f,
+                TraverseSpeed = 40f,
+                Armor = 35,
                 IsVisible = true
             });
 
-            var iaL2Guardian = EnsureUnit(new Unit
+            var samAshigaru = EnsureWarrior(new Warrior
             {
-                Code = "ia_l2_guardian",
-                Name = "IA Bulwark",
-                CultureId = iron.Id,
-                Branch = "tracked",
-                Class = UnitClass.Ranged,
+                Code = "sam_l2_spearman",
+                Name = "Ashigaru Spearman",
+                CultureId = yamato.Id,
+                Branch = "infantry",
+                Class = WarriorClass.Ranged,
                 Level = 2,
                 PurchaseCost = 9000,
-                HP = 220, Damage = 22,
-              Accuracy = 0.84f,
-                Speed = 5.8f, Acceleration = 3.0f, TraverseSpeed = 32f,
-                Armor = 85, 
-                IsVisible = true
-            });
-
-            var iaL2Colossus = EnsureUnit(new Unit
-            {
-                Code = "ia_l2_colossus",
-                Name = "IA Juggernaut",
-                CultureId = iron.Id,
-                Branch = "tracked",
-                Class = UnitClass.Heavy,
-                Level = 2,
-                PurchaseCost = 15000,
-                HP = 320, Damage = 34,
-               Accuracy = 0.80f,
-                Speed = 4.8f, Acceleration = 2.4f, TraverseSpeed = 26f,
-                Armor = 120,
-                IsVisible = true
-            });
-
-            // Links: L1 -> (Scout|Guardian|Colossus)
-            EnsureLink(iaStarter.Id, iaL2Scout.Id,    requiredXp: 400);
-            EnsureLink(iaStarter.Id, iaL2Guardian.Id, requiredXp: 700);
-            EnsureLink(iaStarter.Id, iaL2Colossus.Id, requiredXp: 1000);
-
-            // Nova Syndicate (biped) — L1 + три L2
-            var nvStarter = db.Units.FirstOrDefault(v => v.Code == "nv_l1_starter")
-                            ?? EnsureUnit(new Unit
-                            {
-                                Code = "nv_l1_starter",
-                                Name = "Nova Wisp",
-                                CultureId = nova.Id,
-                                Branch = "biped",
-                                Class = UnitClass.Light,
-                                Level = 1,
-                                PurchaseCost = 0,
-
-                                HP = 100, Damage = 14,
-                              Accuracy = 0.86f,
-                                Speed = 7.0f, Acceleration = 4.0f, TraverseSpeed = 38f,
-                                Armor = 40,
-                                IsVisible = true
-                            });
-
-            var nvL2Scout = EnsureUnit(new Unit
-            {
-                Code = "nv_l2_scout",
-                Name = "Nova Flicker",
-                CultureId = nova.Id,
-                Branch = "biped",
-                Class = UnitClass.Light,
-                Level = 2,
-                PurchaseCost = 5000,
-                HP = 130, Damage = 18,
-              Accuracy = 0.88f,
-                Speed = 7.6f, Acceleration = 4.4f, TraverseSpeed = 40f,
-                Armor = 44,
-                IsVisible = true
-            });
-
-            var nvL2Guardian = EnsureUnit(new Unit
-            {
-                Code = "nv_l2_guardian",
-                Name = "Nova Aegis",
-                CultureId = nova.Id,
-                Branch = "biped",
-                Class = UnitClass.Ranged,
-                Level = 2,
-                PurchaseCost = 9000,
-                HP = 200, Damage = 24,
-              Accuracy = 0.85f,
-                Speed = 6.2f, Acceleration = 3.6f, TraverseSpeed = 34f,
+                HP = 200,
+                Damage = 22,
+                Accuracy = 0.88f,
+                Speed = 6.0f,
+                Acceleration = 3.4f,
+                TraverseSpeed = 34f,
                 Armor = 70,
                 IsVisible = true
             });
 
-            var nvL2Colossus = EnsureUnit(new Unit
+            var samKensei = EnsureWarrior(new Warrior
             {
-                Code = "nv_l2_colossus",
-                Name = "Nova Titan",
-                CultureId = nova.Id,
-                Branch = "biped",
-                Class = UnitClass.Heavy,
+                Code = "sam_l2_kensei",
+                Name = "Kensei Vanguard",
+                CultureId = yamato.Id,
+                Branch = "mounted",
+                Class = WarriorClass.Heavy,
                 Level = 2,
                 PurchaseCost = 15000,
-                HP = 300, Damage = 36,
-              Accuracy = 0.82f,
-                Speed = 5.0f, Acceleration = 2.8f, TraverseSpeed = 28f,
-                Armor = 105,
+                HP = 300,
+                Damage = 32,
+                Accuracy = 0.86f,
+                Speed = 5.2f,
+                Acceleration = 2.8f,
+                TraverseSpeed = 28f,
+                Armor = 110,
                 IsVisible = true
             });
 
-            // Links: L1 -> (Scout|Guardian|Colossus)
-            EnsureLink(nvStarter.Id, nvL2Scout.Id,    requiredXp: 400);
-            EnsureLink(nvStarter.Id, nvL2Guardian.Id, requiredXp: 700);
-            EnsureLink(nvStarter.Id, nvL2Colossus.Id, requiredXp: 1000);
+            // Links: starter -> each L2
+            EnsureLink(samStarter.Id, samRonin.Id, requiredXp: 400);
+            EnsureLink(samStarter.Id, samAshigaru.Id, requiredXp: 700);
+            EnsureLink(samStarter.Id, samKensei.Id, requiredXp: 1000);
 
-            // --- Players ---
+            // --- Nordic Clan (vikings) ---
+            var vikStarter = db.Warriors.FirstOrDefault(v => v.Code == "vik_l1_starter")
+                             ?? EnsureWarrior(new Warrior
+                             {
+                                 Code = "vik_l1_starter",
+                                 Name = "Nordic Reaver",
+                                 CultureId = nordic.Id,
+                                 Branch = "infantry",
+                                 Class = WarriorClass.Light,
+                                 Level = 1,
+                                 PurchaseCost = 0,
+
+                                 HP = 130,
+                                 Damage = 16,
+                                 Accuracy = 0.86f,
+                                 Speed = 6.2f,
+                                 Acceleration = 3.6f,
+                                 TraverseSpeed = 36f,
+                                 Armor = 40,
+                                 IsVisible = true
+                             });
+
+            var vikRaider = EnsureWarrior(new Warrior
+            {
+                Code = "vik_l2_raider",
+                Name = "Raider Skirmisher",
+                CultureId = nordic.Id,
+                Branch = "infantry",
+                Class = WarriorClass.Light,
+                Level = 2,
+                PurchaseCost = 4800,
+                HP = 150,
+                Damage = 20,
+                Accuracy = 0.84f,
+                Speed = 7.0f,
+                Acceleration = 4.0f,
+                TraverseSpeed = 38f,
+                Armor = 45,
+                IsVisible = true
+            });
+
+            var vikShield = EnsureWarrior(new Warrior
+            {
+                Code = "vik_l2_shieldbearer",
+                Name = "Shieldbearer Guardian",
+                CultureId = nordic.Id,
+                Branch = "infantry",
+                Class = WarriorClass.Ranged,
+                Level = 2,
+                PurchaseCost = 9200,
+                HP = 240,
+                Damage = 24,
+                Accuracy = 0.80f,
+                Speed = 5.6f,
+                Acceleration = 3.0f,
+                TraverseSpeed = 32f,
+                Armor = 95,
+                IsVisible = true
+            });
+
+            var vikBerserker = EnsureWarrior(new Warrior
+            {
+                Code = "vik_l2_berserker",
+                Name = "Berserker Colossus",
+                CultureId = nordic.Id,
+                Branch = "infantry",
+                Class = WarriorClass.Heavy,
+                Level = 2,
+                PurchaseCost = 15000,
+                HP = 340,
+                Damage = 36,
+                Accuracy = 0.78f,
+                Speed = 4.6f,
+                Acceleration = 2.6f,
+                TraverseSpeed = 26f,
+                Armor = 130,
+                IsVisible = true
+            });
+
+            // Links: starter -> each L2
+            EnsureLink(vikStarter.Id, vikRaider.Id, requiredXp: 400);
+            EnsureLink(vikStarter.Id, vikShield.Id, requiredXp: 700);
+            EnsureLink(vikStarter.Id, vikBerserker.Id, requiredXp: 1000);
+
+            // --- Players (demo) ---
             if (!db.Players.Any())
             {
                 var user = new Player
                 {
-                    Username = "testuser",
+                    Username = "testknight",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("test123"),
                     IsAdmin = false,
                     Mmr = 1000,
@@ -224,12 +248,12 @@ namespace WarOfMachines.Data
                 db.Players.Add(user);
                 db.SaveChanges();
 
-                // Starter robot assignment
-                var starter = db.Units.First(v => v.Code == "ia_l1_starter");
-                db.UserUnits.Add(new UserUnit
+                // assign a starter (samurai starter by default)
+                var starter = db.Warriors.First(v => v.Code == "sam_l1_starter");
+                db.UserWarriors.Add(new UserWarrior
                 {
                     UserId = user.Id,
-                    UnitId = starter.Id,
+                    WarriorId = starter.Id,
                     IsActive = true,
                     Xp = 0
                 });
@@ -241,7 +265,7 @@ namespace WarOfMachines.Data
             {
                 var m = new Match
                 {
-                    Map = "demo_map",
+                    Map = "jousting_field",
                     StartedAt = DateTimeOffset.UtcNow.AddMinutes(-10),
                     EndedAt = DateTimeOffset.UtcNow.AddMinutes(-5)
                 };
@@ -249,17 +273,17 @@ namespace WarOfMachines.Data
                 db.SaveChanges();
 
                 var u = db.Players.First();
-                var starter = db.Units.First(v => v.Code == "ia_l1_starter");
+                var starter = db.Warriors.First(v => v.Code == "sam_l1_starter");
                 db.MatchParticipants.Add(new MatchParticipant
                 {
                     MatchId = m.Id,
                     UserId = u.Id,
-                    UnitId = starter.Id,
+                    WarriorId = starter.Id,
                     Team = 1,
                     Result = "win",
                     Kills = 2,
-                    Damage = 120,
-                    XpEarned = 50,
+                    Damage = 80,
+                    XpEarned = 60,
                     MmrDelta = 10
                 });
                 db.SaveChanges();

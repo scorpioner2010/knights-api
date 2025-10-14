@@ -1,9 +1,9 @@
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WarOfMachines.Data;
+using KnightsApi.Data;
 
-namespace WarOfMachines.Controllers
+namespace KnightsApi.Controllers
 {
     [ApiController]
     [Route("leaderboard")]
@@ -53,19 +53,19 @@ namespace WarOfMachines.Controllers
             return Ok(list);
         }
 
-        // GET /leaderboard/vehicle-xp?top=10
-        // Рейтинг за досвідом конкретних роботів
-        [HttpGet("vehicle-xp")]
-        public IActionResult GetByVehicleXp([FromQuery] int top = 10)
+        // GET /leaderboard/warrior-xp?top=10
+        // Рейтинг за досвідом конкретних воїнів
+        [HttpGet("warrior-xp")]
+        public IActionResult GetByWarriorXp([FromQuery] int top = 10)
         {
-            var list = _db.UserUnits
+            var list = _db.UserWarriors
                 .OrderByDescending(v => v.Xp)
                 .Take(top)
                 .Select(v => new
                 {
                     UserId = v.UserId,
                     Username = v.User != null ? v.User.Username : "",
-                    VehicleName = v.Unit != null ? v.Unit.Name : "",
+                    WarriorName = v.Warrior != null ? v.Warrior.Name : "",
                     Xp = v.Xp
                 })
                 .ToList();

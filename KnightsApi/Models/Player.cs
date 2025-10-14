@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace WarOfMachines.Models
+namespace KnightsApi.Models
 {
     public class Player
     {
@@ -16,6 +16,6 @@ namespace WarOfMachines.Models
         public int Gold { get; set; } = 0;
         public int FreeXp { get; set; } = 0;
         
-        public ICollection<UserUnit> UserVehicles { get; set; } = new List<UserUnit>();
+        public ICollection<UserWarrior> UserWarriors { get; set; } = new List<UserWarrior>();
     }
 }

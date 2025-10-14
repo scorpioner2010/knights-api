@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace WarOfMachines.Migrations
+namespace KnightsApi.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -13,7 +13,7 @@ namespace WarOfMachines.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Factions",
+                name: "Cultures",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -24,7 +24,7 @@ namespace WarOfMachines.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Factions", x => x.Id);
+                    table.PrimaryKey("PK_Cultures", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -68,8 +68,8 @@ namespace WarOfMachines.Migrations
                     IsAdmin = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     Mmr = table.Column<int>(type: "integer", nullable: false),
-                    Bolts = table.Column<int>(type: "integer", nullable: false),
-                    Adamant = table.Column<int>(type: "integer", nullable: false),
+                    Coins = table.Column<int>(type: "integer", nullable: false),
+                    Gold = table.Column<int>(type: "integer", nullable: false),
                     FreeXp = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -78,43 +78,34 @@ namespace WarOfMachines.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Vehicles",
+                name: "Warriors",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Code = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    FactionId = table.Column<int>(type: "integer", nullable: false),
+                    CultureId = table.Column<int>(type: "integer", nullable: false),
                     Branch = table.Column<string>(type: "text", nullable: false),
                     Class = table.Column<int>(type: "integer", nullable: false),
                     Level = table.Column<int>(type: "integer", nullable: false),
                     PurchaseCost = table.Column<int>(type: "integer", nullable: false),
                     HP = table.Column<int>(type: "integer", nullable: false),
                     Damage = table.Column<int>(type: "integer", nullable: false),
-                    Penetration = table.Column<int>(type: "integer", nullable: false),
-                    ReloadTime = table.Column<float>(type: "real", nullable: false),
                     Accuracy = table.Column<float>(type: "real", nullable: false),
-                    AimTime = table.Column<float>(type: "real", nullable: false),
                     Speed = table.Column<float>(type: "real", nullable: false),
                     Acceleration = table.Column<float>(type: "real", nullable: false),
                     TraverseSpeed = table.Column<float>(type: "real", nullable: false),
-                    TurretTraverseSpeed = table.Column<float>(type: "real", nullable: false),
-                    TurretArmorFront = table.Column<int>(type: "integer", nullable: false),
-                    TurretArmorSide = table.Column<int>(type: "integer", nullable: false),
-                    TurretArmorRear = table.Column<int>(type: "integer", nullable: false),
-                    HullArmorFront = table.Column<int>(type: "integer", nullable: false),
-                    HullArmorSide = table.Column<int>(type: "integer", nullable: false),
-                    HullArmorRear = table.Column<int>(type: "integer", nullable: false),
+                    Armor = table.Column<int>(type: "integer", nullable: false),
                     IsVisible = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Vehicles", x => x.Id);
+                    table.PrimaryKey("PK_Warriors", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Vehicles_Factions_FactionId",
-                        column: x => x.FactionId,
-                        principalTable: "Factions",
+                        name: "FK_Warriors_Cultures_CultureId",
+                        column: x => x.CultureId,
+                        principalTable: "Cultures",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -127,7 +118,7 @@ namespace WarOfMachines.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     MatchId = table.Column<int>(type: "integer", nullable: false),
                     UserId = table.Column<int>(type: "integer", nullable: false),
-                    VehicleId = table.Column<int>(type: "integer", nullable: false),
+                    WarriorId = table.Column<int>(type: "integer", nullable: false),
                     Team = table.Column<int>(type: "integer", nullable: false),
                     Result = table.Column<string>(type: "text", nullable: false),
                     Kills = table.Column<int>(type: "integer", nullable: false),
@@ -151,77 +142,77 @@ namespace WarOfMachines.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MatchParticipants_Vehicles_VehicleId",
-                        column: x => x.VehicleId,
-                        principalTable: "Vehicles",
+                        name: "FK_MatchParticipants_Warriors_WarriorId",
+                        column: x => x.WarriorId,
+                        principalTable: "Warriors",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserVehicles",
+                name: "UserWarriors",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     UserId = table.Column<int>(type: "integer", nullable: false),
-                    VehicleId = table.Column<int>(type: "integer", nullable: false),
+                    WarriorId = table.Column<int>(type: "integer", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     Xp = table.Column<int>(type: "integer", nullable: false),
                     PlayerId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserVehicles", x => x.Id);
+                    table.PrimaryKey("PK_UserWarriors", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_UserVehicles_Players_PlayerId",
+                        name: "FK_UserWarriors_Players_PlayerId",
                         column: x => x.PlayerId,
                         principalTable: "Players",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_UserVehicles_Players_UserId",
+                        name: "FK_UserWarriors_Players_UserId",
                         column: x => x.UserId,
                         principalTable: "Players",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_UserVehicles_Vehicles_VehicleId",
-                        column: x => x.VehicleId,
-                        principalTable: "Vehicles",
+                        name: "FK_UserWarriors_Warriors_WarriorId",
+                        column: x => x.WarriorId,
+                        principalTable: "Warriors",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "VehicleResearchRequirements",
+                name: "WarriorResearchRequirements",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    PredecessorVehicleId = table.Column<int>(type: "integer", nullable: false),
-                    SuccessorVehicleId = table.Column<int>(type: "integer", nullable: false),
+                    PredecessorWarriorId = table.Column<int>(type: "integer", nullable: false),
+                    SuccessorWarriorId = table.Column<int>(type: "integer", nullable: false),
                     RequiredXpOnPredecessor = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_VehicleResearchRequirements", x => x.Id);
+                    table.PrimaryKey("PK_WarriorResearchRequirements", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_VehicleResearchRequirements_Vehicles_PredecessorVehicleId",
-                        column: x => x.PredecessorVehicleId,
-                        principalTable: "Vehicles",
+                        name: "FK_WarriorResearchRequirements_Warriors_PredecessorWarriorId",
+                        column: x => x.PredecessorWarriorId,
+                        principalTable: "Warriors",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_VehicleResearchRequirements_Vehicles_SuccessorVehicleId",
-                        column: x => x.SuccessorVehicleId,
-                        principalTable: "Vehicles",
+                        name: "FK_WarriorResearchRequirements_Warriors_SuccessorWarriorId",
+                        column: x => x.SuccessorWarriorId,
+                        principalTable: "Warriors",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Factions_Code",
-                table: "Factions",
+                name: "IX_Cultures_Code",
+                table: "Cultures",
                 column: "Code",
                 unique: true);
 
@@ -242,54 +233,54 @@ namespace WarOfMachines.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MatchParticipants_VehicleId",
+                name: "IX_MatchParticipants_WarriorId",
                 table: "MatchParticipants",
-                column: "VehicleId");
+                column: "WarriorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserVehicles_PlayerId",
-                table: "UserVehicles",
+                name: "IX_UserWarriors_PlayerId",
+                table: "UserWarriors",
                 column: "PlayerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserVehicles_UserId_IsActive",
-                table: "UserVehicles",
+                name: "IX_UserWarriors_UserId_IsActive",
+                table: "UserWarriors",
                 columns: new[] { "UserId", "IsActive" },
                 unique: true,
                 filter: "\"IsActive\" = TRUE");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserVehicles_UserId_VehicleId",
-                table: "UserVehicles",
-                columns: new[] { "UserId", "VehicleId" },
+                name: "IX_UserWarriors_UserId_WarriorId",
+                table: "UserWarriors",
+                columns: new[] { "UserId", "WarriorId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserVehicles_VehicleId",
-                table: "UserVehicles",
-                column: "VehicleId");
+                name: "IX_UserWarriors_WarriorId",
+                table: "UserWarriors",
+                column: "WarriorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_VehicleResearchRequirements_PredecessorVehicleId_SuccessorV~",
-                table: "VehicleResearchRequirements",
-                columns: new[] { "PredecessorVehicleId", "SuccessorVehicleId" },
+                name: "IX_WarriorResearchRequirements_PredecessorWarriorId_SuccessorW~",
+                table: "WarriorResearchRequirements",
+                columns: new[] { "PredecessorWarriorId", "SuccessorWarriorId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_VehicleResearchRequirements_SuccessorVehicleId",
-                table: "VehicleResearchRequirements",
-                column: "SuccessorVehicleId");
+                name: "IX_WarriorResearchRequirements_SuccessorWarriorId",
+                table: "WarriorResearchRequirements",
+                column: "SuccessorWarriorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Vehicles_Code",
-                table: "Vehicles",
+                name: "IX_Warriors_Code",
+                table: "Warriors",
                 column: "Code",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Vehicles_FactionId",
-                table: "Vehicles",
-                column: "FactionId");
+                name: "IX_Warriors_CultureId",
+                table: "Warriors",
+                column: "CultureId");
         }
 
         /// <inheritdoc />
@@ -302,10 +293,10 @@ namespace WarOfMachines.Migrations
                 name: "MatchParticipants");
 
             migrationBuilder.DropTable(
-                name: "UserVehicles");
+                name: "UserWarriors");
 
             migrationBuilder.DropTable(
-                name: "VehicleResearchRequirements");
+                name: "WarriorResearchRequirements");
 
             migrationBuilder.DropTable(
                 name: "Matches");
@@ -314,10 +305,10 @@ namespace WarOfMachines.Migrations
                 name: "Players");
 
             migrationBuilder.DropTable(
-                name: "Vehicles");
+                name: "Warriors");
 
             migrationBuilder.DropTable(
-                name: "Factions");
+                name: "Cultures");
         }
     }
 }

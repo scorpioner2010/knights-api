@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace WarOfMachines.Models
+namespace KnightsApi.Models
 {
     public class MatchParticipant
     {
@@ -17,9 +17,9 @@ namespace WarOfMachines.Models
         [Required]
         public int UserId { get; set; }
 
-        // Який танк/робот використовувався
+        // Який воїн використовувався
         [Required]
-        public int UnitId { get; set; }
+        public int WarriorId { get; set; }
 
         // Номер команди (наприклад 1 чи 2)
         [Required]
@@ -41,7 +41,7 @@ namespace WarOfMachines.Models
         [ForeignKey(nameof(UserId))]
         public Player? User { get; set; }
 
-        [ForeignKey(nameof(UnitId))]
-        public Unit? Unit { get; set; }
+        [ForeignKey(nameof(WarriorId))]
+        public Warrior? Warrior { get; set; }
     }
 }

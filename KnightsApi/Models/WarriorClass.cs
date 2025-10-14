@@ -1,7 +1,6 @@
-// Models/VehicleClass.cs
-namespace WarOfMachines.Models
+namespace KnightsApi.Models
 {
-    public enum UnitClass
+    public enum WarriorClass
     {
         Light = 0,     // легкий
         Ranged = 1,  // середній

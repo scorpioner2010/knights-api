@@ -5,10 +5,10 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WarOfMachines.Data;
-using WarOfMachines.Models;
+using KnightsApi.Data;
+using KnightsApi.Models;
 
-namespace WarOfMachines.Controllers
+namespace KnightsApi.Controllers
 {
     [ApiController]
     [Route("matches")]
@@ -179,7 +179,7 @@ namespace WarOfMachines.Controllers
                 {
                     MatchId = match.Id,
                     UserId = raw.UserId,
-                    UnitId = raw.VehicleId,
+                    WarriorId = raw.WarriorId,
                     Team = raw.Team,
                     Result = result,
                     Kills = kills,
@@ -194,11 +194,11 @@ namespace WarOfMachines.Controllers
                 user.Coins += bolts;
                 user.FreeXp += (int)Math.Round(xpTotal * FreeXpPercent, MidpointRounding.AwayFromZero);
 
-                // Знаходимо техніку гравця
-                var uv = _db.UserUnits.FirstOrDefault(v => v.UserId == raw.UserId && v.UnitId == raw.VehicleId);
-                if (uv != null)
+                // Знаходимо воїна гравця
+                var uw = _db.UserWarriors.FirstOrDefault(v => v.UserId == raw.UserId && v.WarriorId == raw.WarriorId);
+                if (uw != null)
                 {
-                    uv.Xp += xpTotal;
+                    uw.Xp += xpTotal;
                 }
             }
 
@@ -232,7 +232,7 @@ namespace WarOfMachines.Controllers
         public class ParticipantInput
         {
             public int UserId { get; set; }
-            public int VehicleId { get; set; }
+            public int WarriorId { get; set; }
             public int Team { get; set; }
             public string Result { get; set; } = "lose";
             public int Kills { get; set; } = 0;
@@ -248,13 +248,13 @@ namespace WarOfMachines.Controllers
             var list = _db.MatchParticipants
                 .Where(x => x.MatchId == matchId)
                 .Include(x => x.User)
-                .Include(x => x.Unit)
+                .Include(x => x.Warrior)
                 .Select(x => new
                 {
                     x.UserId,
                     Username = x.User != null ? x.User.Username : "",
-                    VehicleId = x.UnitId,
-                    VehicleName = x.Unit != null ? x.Unit.Name : "",
+                    WarriorId = x.WarriorId,
+                    WarriorName = x.Warrior != null ? x.Warrior.Name : "",
                     x.Team,
                     x.Result,
                     x.Kills,

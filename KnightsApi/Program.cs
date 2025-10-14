@@ -1,33 +1,69 @@
-using System;
-using System.IO;
 using System.Text.Json;
+using KnightsApi.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using WarOfMachines.Data;
-using WarOfMachines.Logging; // our in-memory log store (with Seq + GetSince)
+using Npgsql;
+using WarOfMachines.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------- DB (PostgreSQL) ----------
-string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                           ?? builder.Configuration["DATABASE_URL"];
-if (string.IsNullOrWhiteSpace(connectionString))
-    throw new InvalidOperationException("Connection string not configured.");
+// Prefer environment DATABASE_URL (Render). Fallback to DefaultConnection in config.
+var rawConn = Environment.GetEnvironmentVariable("DATABASE_URL")
+              ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
-static string EnsureSsl(string cs)
+if (string.IsNullOrWhiteSpace(rawConn))
+    throw new InvalidOperationException("Connection string not configured. Set DATABASE_URL or DefaultConnection.");
+
+// If DATABASE_URL is in the form postgres:// or postgresql:// -> convert to Npgsql connection string
+string BuildNpgsqlConnection(string input)
 {
-    if (cs.IndexOf("sslmode", StringComparison.OrdinalIgnoreCase) >= 0 ||
-        cs.IndexOf("Ssl Mode", StringComparison.OrdinalIgnoreCase) >= 0)
-        return cs;
+    if (input.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+        input.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+    {
+        var uri = new Uri(input);
+        var userInfo = uri.UserInfo.Split(':', StringSplitOptions.RemoveEmptyEntries);
+        var username = userInfo.Length > 0 ? userInfo[0] : "";
+        var password = userInfo.Length > 1 ? userInfo[1] : "";
+        var host = uri.Host;
+        var port = uri.Port != -1 ? uri.Port : 5432;
+        var database = uri.AbsolutePath.TrimStart('/');
 
-    return cs.Contains("://")
-        ? (cs.Contains("?") ? cs + "&sslmode=require" : cs + "?sslmode=require")
-        : cs + ";Ssl Mode=Require";
+        var csb = new NpgsqlConnectionStringBuilder
+        {
+            Host = host,
+            Port = port,
+            Database = database,
+            Username = username,
+            Password = password,
+            SslMode = SslMode.Require,
+            TrustServerCertificate = true
+        };
+
+        return csb.ToString();
+    }
+
+    // otherwise assume it's already a Npgsql-style connection string; ensure SSL
+    string EnsureSslLegacy(string cs)
+    {
+        if (cs.IndexOf("sslmode", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            cs.IndexOf("Ssl Mode", StringComparison.OrdinalIgnoreCase) >= 0)
+            return cs;
+
+        // if it looks like a URL, don't touch; otherwise append parameter style
+        return cs.Contains("://")
+            ? (cs.Contains("?") ? cs + "&sslmode=require" : cs + "?sslmode=require")
+            : cs + ";Ssl Mode=Require;Trust Server Certificate=true";
+    }
+
+    return EnsureSslLegacy(input);
 }
-connectionString = EnsureSsl(connectionString);
 
-builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(connectionString));
+var npgsqlConn = BuildNpgsqlConnection(rawConn);
+
+builder.Services.AddDbContext<AppDbContext>(opts =>
+    opts.UseNpgsql(npgsqlConn));
 
 // ---------- Controllers + JSON (camelCase) ----------
 builder.Services
@@ -81,7 +117,7 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// ❌ no global logging providers (only explicit events we add ourselves)
+// no global logging providers (we use explicit InMemoryLogStore events)
 
 var app = builder.Build();
 
@@ -94,7 +130,7 @@ app.UseStaticFiles();
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "WarOfMachines API v1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "KnightsApi API v1");
     c.RoutePrefix = "swagger";
 });
 

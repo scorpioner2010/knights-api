@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace WarOfMachines.Models
+namespace KnightsApi.Models
 {
     public class Map
     {

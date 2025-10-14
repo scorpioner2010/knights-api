@@ -1,21 +1,21 @@
 using Microsoft.EntityFrameworkCore;
-using WarOfMachines.Models;
+using KnightsApi.Models;
 
-namespace WarOfMachines.Data
+namespace KnightsApi.Data
 {
     public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<Player> Players => Set<Player>();
-        public DbSet<Unit> Units => Set<Unit>();
-        public DbSet<UserUnit> UserUnits => Set<UserUnit>();
+        public DbSet<Warrior> Warriors => Set<Warrior>();
+        public DbSet<UserWarrior> UserWarriors => Set<UserWarrior>();
         public DbSet<Match> Matches => Set<Match>();
         public DbSet<MatchParticipant> MatchParticipants => Set<MatchParticipant>();
         public DbSet<Culture> Cultures => Set<Culture>();
         public DbSet<Map> Maps => Set<Map>();
 
-        public DbSet<UnitResearchRequirement> VehicleResearchRequirements => Set<UnitResearchRequirement>();
+        public DbSet<WarriorResearchRequirement> WarriorResearchRequirements => Set<WarriorResearchRequirement>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -26,48 +26,48 @@ namespace WarOfMachines.Data
             modelBuilder.Entity<Culture>().Property(f => f.Code).IsRequired();
             modelBuilder.Entity<Culture>().Property(f => f.Name).IsRequired();
 
-            // Unit
-            modelBuilder.Entity<Unit>().HasIndex(v => v.Code).IsUnique();
-            modelBuilder.Entity<Unit>().Property(v => v.Code).IsRequired();
-            modelBuilder.Entity<Unit>().Property(v => v.Name).IsRequired();
-            modelBuilder.Entity<Unit>().HasOne(v => v.Culture).WithMany().HasForeignKey(v => v.CultureId).OnDelete(DeleteBehavior.Restrict);
+            // Warrior
+            modelBuilder.Entity<Warrior>().HasIndex(v => v.Code).IsUnique();
+            modelBuilder.Entity<Warrior>().Property(v => v.Code).IsRequired();
+            modelBuilder.Entity<Warrior>().Property(v => v.Name).IsRequired();
+            modelBuilder.Entity<Warrior>().HasOne(v => v.Culture).WithMany().HasForeignKey(v => v.CultureId).OnDelete(DeleteBehavior.Restrict);
 
-            // VehicleResearchRequirement (предок -> нащадок; ResearchFrom прив'язане до Successor)
-            modelBuilder.Entity<Unit>()
+            // WarriorResearchRequirement (предок -> нащадок; ResearchFrom прив'язане до Successor)
+            modelBuilder.Entity<Warrior>()
                 .HasMany(v => v.ResearchFrom)
                 .WithOne(r => r.Successor)
-                .HasForeignKey(r => r.SuccessorUnitId)
+                .HasForeignKey(r => r.SuccessorWarriorId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<UnitResearchRequirement>()
+            modelBuilder.Entity<WarriorResearchRequirement>()
                 .HasOne(r => r.Predecessor)
                 .WithMany()
-                .HasForeignKey(r => r.PredecessorUnitId)
+                .HasForeignKey(r => r.PredecessorWarriorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<UnitResearchRequirement>()
-                .HasIndex(r => new { PredecessorVehicleId = r.PredecessorUnitId, SuccessorVehicleId = r.SuccessorUnitId })
+            modelBuilder.Entity<WarriorResearchRequirement>()
+                .HasIndex(r => new { PredecessorWarriorId = r.PredecessorWarriorId, SuccessorWarriorId = r.SuccessorWarriorId })
                 .IsUnique();
 
-            // UserVehicle
-            modelBuilder.Entity<UserUnit>()
-                .HasIndex(uv => new { uv.UserId, VehicleId = uv.UnitId }).IsUnique();
+            // UserWarrior
+            modelBuilder.Entity<UserWarrior>()
+                .HasIndex(uv => new { uv.UserId, WarriorId = uv.WarriorId }).IsUnique();
 
-            modelBuilder.Entity<UserUnit>()
-                .HasIndex(nameof(UserUnit.UserId), nameof(UserUnit.IsActive))
+            modelBuilder.Entity<UserWarrior>()
+                .HasIndex(nameof(UserWarrior.UserId), nameof(UserWarrior.IsActive))
                 .HasFilter("\"IsActive\" = TRUE")
                 .IsUnique();
 
-            modelBuilder.Entity<UserUnit>()
+            modelBuilder.Entity<UserWarrior>()
                 .HasOne(uv => uv.User)
                 .WithMany()
                 .HasForeignKey(uv => uv.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<UserUnit>()
-                .HasOne(uv => uv.Unit)
+            modelBuilder.Entity<UserWarrior>()
+                .HasOne(uv => uv.Warrior)
                 .WithMany()
-                .HasForeignKey(uv => uv.UnitId)
+                .HasForeignKey(uv => uv.WarriorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // MatchParticipant
@@ -84,9 +84,9 @@ namespace WarOfMachines.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<MatchParticipant>()
-                .HasOne(mp => mp.Unit)
+                .HasOne(mp => mp.Warrior)
                 .WithMany()
-                .HasForeignKey(mp => mp.UnitId)
+                .HasForeignKey(mp => mp.WarriorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Map

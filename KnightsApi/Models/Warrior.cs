@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace WarOfMachines.Models
+namespace KnightsApi.Models
 {
-    public class Unit
+    public class Warrior
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -26,7 +26,7 @@ namespace WarOfMachines.Models
         public string Branch { get; set; } = "tracked"; // "tracked" | "biped"
 
         [Required]
-        public UnitClass Class { get; set; } = UnitClass.Light; // Scout|Guardian|Colossus
+        public WarriorClass Class { get; set; } = WarriorClass.Light; // Scout|Guardian|Colossus
 
         [Range(1, 4)]
         public int Level { get; set; } = 1; // 1..4
@@ -39,7 +39,7 @@ namespace WarOfMachines.Models
         public float TraverseSpeed { get; set; } = 0f;
         public int Armor { get; set; } = 0;
 
-        public ICollection<UnitResearchRequirement> ResearchFrom { get; set; } = new List<UnitResearchRequirement>();
+        public ICollection<WarriorResearchRequirement> ResearchFrom { get; set; } = new List<WarriorResearchRequirement>();
         
         public bool IsVisible { get; set; } = true;
     }

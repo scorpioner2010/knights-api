@@ -1,26 +1,26 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WarOfMachines.Data;
-using WarOfMachines.Models;
+using KnightsApi.Data;
+using KnightsApi.Models;
 
-namespace WarOfMachines.Controllers
+namespace KnightsApi.Controllers
 {
     [ApiController]
-    [Route("vehicles")]
-    public class UnitsController : ControllerBase
+    [Route("warriors")]
+    public class WarriorsController : ControllerBase
     {
         private readonly AppDbContext _db;
 
-        public UnitsController(AppDbContext db)
+        public WarriorsController(AppDbContext db)
         {
             _db = db;
         }
 
-        // GET /vehicles?faction=iron_alliance&branch=tracked
+        // GET /warriors?faction=iron_alliance&branch=tracked
         [HttpGet]
         public IActionResult GetAll([FromQuery] string? faction = null, [FromQuery] string? branch = null)
         {
-            IQueryable<Unit> q = _db.Units.Include(v => v.Culture).AsQueryable();
+            IQueryable<Warrior> q = _db.Warriors.Include(v => v.Culture).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(faction))
             {
@@ -34,8 +34,8 @@ namespace WarOfMachines.Controllers
                 q = q.Where(v => v.Branch.ToLower() == br);
             }
 
-            List<VehicleDto> items = q
-                .Select(v => new VehicleDto
+            List<WarriorDto> items = q
+                .Select(v => new WarriorDto
                 {
                     Id = v.Id,
                     Code = v.Code,
@@ -55,7 +55,7 @@ namespace WarOfMachines.Controllers
                     Speed = v.Speed,
                     Acceleration = v.Acceleration,
                     TraverseSpeed = v.TraverseSpeed,
-                    
+
                     Armor = $"{v.Armor}"
                 })
                 .ToList();
@@ -63,16 +63,16 @@ namespace WarOfMachines.Controllers
             return Ok(items);
         }
 
-        // GET /vehicles/{id:int}
+        // GET /warriors/{id:int}
         [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
-            var v = _db.Units
+            var v = _db.Warriors
                 .Include(x => x.Culture)
                 .FirstOrDefault(x => x.Id == id);
             if (v == null) return NotFound();
 
-            return Ok(new VehicleDto
+            return Ok(new WarriorDto
             {
                 Id = v.Id,
                 Code = v.Code,
@@ -96,16 +96,16 @@ namespace WarOfMachines.Controllers
             });
         }
 
-        // GET /vehicles/by-code/{code}
+        // GET /warriors/by-code/{code}
         [HttpGet("by-code/{code}")]
         public IActionResult GetByCode(string code)
         {
-            var v = _db.Units
+            var v = _db.Warriors
                 .Include(x => x.Culture)
                 .FirstOrDefault(x => x.Code == code);
             if (v == null) return NotFound();
 
-            return Ok(new VehicleDto
+            return Ok(new WarriorDto
             {
                 Id = v.Id,
                 Code = v.Code,
@@ -131,15 +131,15 @@ namespace WarOfMachines.Controllers
 
         // --- TECH TREE LINKS ---
 
-        // GET /vehicles/{id}/research-from
+        // GET /warriors/{id}/research-from
         [HttpGet("{id:int}/research-from")]
         public IActionResult GetResearchFrom(int id)
         {
-            var links = _db.VehicleResearchRequirements
-                .Where(r => r.SuccessorUnitId == id)
+            var links = _db.WarriorResearchRequirements
+                .Where(r => r.SuccessorWarriorId == id)
                 .Select(r => new
                 {
-                    predecessorId = r.PredecessorUnitId,
+                    predecessorId = r.PredecessorWarriorId,
                     requiredXp = r.RequiredXpOnPredecessor
                 })
                 .ToList();
@@ -149,50 +149,50 @@ namespace WarOfMachines.Controllers
 
         public class CreateLinkDto
         {
-            public int PredecessorVehicleId { get; set; }
-            public int SuccessorVehicleId { get; set; }
+            public int PredecessorWarriorId { get; set; }
+            public int SuccessorWarriorId { get; set; }
             public int RequiredXpOnPredecessor { get; set; }
         }
 
-        // POST /vehicles/links
+        // POST /warriors/links
         [HttpPost("links")]
         public IActionResult CreateLink([FromBody] CreateLinkDto dto)
         {
-            if (dto.PredecessorVehicleId == dto.SuccessorVehicleId)
+            if (dto.PredecessorWarriorId == dto.SuccessorWarriorId)
             {
                 return BadRequest("predecessor == successor");
             }
 
-            bool ok = _db.Units.Any(v => v.Id == dto.PredecessorVehicleId)
-                   && _db.Units.Any(v => v.Id == dto.SuccessorVehicleId);
-            if (!ok) return NotFound("vehicle not found");
+            bool ok = _db.Warriors.Any(v => v.Id == dto.PredecessorWarriorId)
+                   && _db.Warriors.Any(v => v.Id == dto.SuccessorWarriorId);
+            if (!ok) return NotFound("warrior not found");
 
-            bool dup = _db.VehicleResearchRequirements
-                .Any(x => x.PredecessorUnitId == dto.PredecessorVehicleId
-                       && x.SuccessorUnitId == dto.SuccessorVehicleId);
+            bool dup = _db.WarriorResearchRequirements
+                .Any(x => x.PredecessorWarriorId == dto.PredecessorWarriorId
+                       && x.SuccessorWarriorId == dto.SuccessorWarriorId);
             if (dup) return Conflict("link exists");
 
-            var link = new WarOfMachines.Models.UnitResearchRequirement
+            var link = new WarriorResearchRequirement
             {
-                PredecessorUnitId = dto.PredecessorVehicleId,
-                SuccessorUnitId = dto.SuccessorVehicleId,
+                PredecessorWarriorId = dto.PredecessorWarriorId,
+                SuccessorWarriorId = dto.SuccessorWarriorId,
                 RequiredXpOnPredecessor = dto.RequiredXpOnPredecessor
             };
 
-            _db.VehicleResearchRequirements.Add(link);
+            _db.WarriorResearchRequirements.Add(link);
             _db.SaveChanges();
 
             return Ok(new { link.Id });
         }
 
-        // DELETE /vehicles/links/{id}
+        // DELETE /warriors/links/{id}
         [HttpDelete("links/{id:int}")]
         public IActionResult DeleteLink(int id)
         {
-            var link = _db.VehicleResearchRequirements.FirstOrDefault(x => x.Id == id);
+            var link = _db.WarriorResearchRequirements.FirstOrDefault(x => x.Id == id);
             if (link == null) return NotFound();
 
-            _db.VehicleResearchRequirements.Remove(link);
+            _db.WarriorResearchRequirements.Remove(link);
             _db.SaveChanges();
 
             return NoContent();
@@ -200,11 +200,11 @@ namespace WarOfMachines.Controllers
 
         // --- GRAPH (для дерева розвитку) ---
 
-        // GET /vehicles/graph?faction=iron_alliance
+        // GET /warriors/graph?faction=iron_alliance
         [HttpGet("graph")]
         public IActionResult GetGraph([FromQuery] string? faction = null)
         {
-            var vq = _db.Units
+            var vq = _db.Warriors
                 .Include(v => v.Culture)
                 .AsQueryable();
 
@@ -230,12 +230,12 @@ namespace WarOfMachines.Controllers
 
             var nodeIds = nodes.Select(n => n.id).ToList();
 
-            var edges = _db.VehicleResearchRequirements
-                .Where(r => nodeIds.Contains(r.PredecessorUnitId) || nodeIds.Contains(r.SuccessorUnitId))
+            var edges = _db.WarriorResearchRequirements
+                .Where(r => nodeIds.Contains(r.PredecessorWarriorId) || nodeIds.Contains(r.SuccessorWarriorId))
                 .Select(r => new
                 {
-                    fromId = r.PredecessorUnitId,
-                    toId = r.SuccessorUnitId,
+                    fromId = r.PredecessorWarriorId,
+                    toId = r.SuccessorWarriorId,
                     requiredXp = r.RequiredXpOnPredecessor
                 })
                 .ToList();
@@ -245,7 +245,7 @@ namespace WarOfMachines.Controllers
     }
 
     // DTO
-    public class VehicleDto
+    public class WarriorDto
     {
         public int Id { get; set; }
         public string Code { get; set; } = string.Empty;
