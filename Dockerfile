@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . .
 
 # Заходимо в каталог проєкту
-WORKDIR /app/WarOfMachinesAPI
+WORKDIR /app/KnightsApi
 
 # Відновлення й публікація
 RUN dotnet restore KnightsApi.csproj
