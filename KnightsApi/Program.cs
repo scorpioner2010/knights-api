@@ -1,10 +1,10 @@
 using System.Text.Json;
 using KnightsApi.Data;
+using KnightsApi.Logging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
-using WarOfMachines.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 

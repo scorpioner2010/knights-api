@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using KnightsApi.Models;
 
 namespace KnightsApi.Data

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Logs</title>
+  <style>
+    :root{
+      --bg:#0f1115; --card:#161a22; --text:#e7e7e7; --muted:#9aa4b2; --border:#232938; --row:#111722;
+      --trace:#9aa4b2; --debug:#7aa2f7; --info:#7bd88f; --warn:#ffd166; --error:#ff6b6b; --critical:#ff4d4d;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+      display:grid; grid-template-rows:auto 1fr;
+    }
+    header{ padding:12px 16px; border-bottom:1px solid var(--border); }
+    .title{ margin:0; font-size:16px }
+    .wrap{ padding:12px; overflow:auto; }
+    .card{
+      height:100%; background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:auto;
+    }
+
+    /* Table is fixed layout: narrow Time + Level, Message takes all remaining space */
+    table{ width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; }
+    col.time   { width: 170px; }
+    col.level  { width: 120px; }
+    col.msg    { width:auto; } /* stretch */
+
+    thead th{
+      position:sticky; top:0; background:#141a26; z-index:5; text-align:left;
+      padding:8px; font-size:12px; color:#cfd6e3; border-bottom:1px solid var(--border);
+    }
+    tbody tr:nth-child(even){ background:var(--row) }
+    td{
+      padding:8px; font-size:12px; border-bottom:1px solid #0e1420; vertical-align:top;
+      overflow-wrap:anywhere; /* long words wrap */
+      word-break:break-word;
+    }
+    .time{ color:var(--muted); white-space:nowrap; }
+    .lvl{ font-weight:700; }
+    .lvl-Trace{color:var(--trace)} .lvl-Debug{color:var(--debug)} .lvl-Information{color:var(--info)}
+    .lvl-Warning{color:var(--warn)} .lvl-Error{color:var(--error)} .lvl-Critical{color:var(--critical)}
+    .msg{ white-space:pre-wrap; } /* keep new lines, wrap long text */
+  </style>
+</head>
+<body>
+<header><h1 class="title">Server Logs</h1></header>
+
+<div class="wrap">
+  <div class="card">
+    <table>
+      <colgroup>
+        <col class="time" />
+        <col class="level" />
+        <col class="msg" />
+      </colgroup>
+      <thead>
+      <tr>
+        <th>Time</th>
+        <th>Level</th>
+        <th>Message</th>
+      </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const rowsEl = document.getElementById('rows');
+
+  function levelName(lv){
+    if (typeof lv === 'number') return ['Trace','Debug','Information','Warning','Error','Critical'][lv] || 'Information';
+    return lv || 'Information';
+  }
+  function fmtTime(t){
+    try{
+      const d = new Date(t);
+      return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}) + ' ' + d.toLocaleDateString();
+    }catch{ return t; }
+  }
+  function esc(s){ return (s+'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  function row(e){
+    const L = levelName(e.level);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td class="time">${fmtTime(e.timestamp)}</td>
+        <td class="lvl lvl-${L}">${L}</td>
+        <td class="msg">${esc(e.message || '')}${e.exception ? '\n' + esc(e.exception) : ''}</td>
+      `;
+    return tr;
+  }
+
+  function append(list){
+    const frag = document.createDocumentFragment();
+    for (const e of list) frag.appendChild(row(e));
+    rowsEl.appendChild(frag);
+    rowsEl.parentElement.scrollTop = rowsEl.parentElement.scrollHeight; // autoscroll
+  }
+
+  const es = new EventSource('/admin/logs/stream');
+  es.onmessage = (ev) => {
+    try{
+      const arr = JSON.parse(ev.data) || [];
+      if (arr.length) append(arr);
+    }catch{}
+  };
+</script>
+</body>
+</html>

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace KnightsApi.Models
 {
     public class Player

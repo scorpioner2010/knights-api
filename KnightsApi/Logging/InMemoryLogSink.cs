@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
 
-namespace WarOfMachines.Logging
+namespace KnightsApi.Logging
 {
     /// <summary>
     /// Single in-memory log event.

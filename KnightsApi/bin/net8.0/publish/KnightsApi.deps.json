@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v8.0": {
-      "WarOfMachines/1.0.0": {
+      "KnightsApi/1.0.0": {
         "dependencies": {
           "BCrypt.Net-Next": "4.0.3",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "8.0.0",
@@ -16,7 +16,7 @@
           "System.IdentityModel.Tokens.Jwt": "8.8.0"
         },
         "runtime": {
-          "WarOfMachines.dll": {}
+          "KnightsApi.dll": {}
         }
       },
       "BCrypt.Net-Next/4.0.3": {
@@ -651,7 +651,7 @@
     }
   },
   "libraries": {
-    "WarOfMachines/1.0.0": {
+    "KnightsApi/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
