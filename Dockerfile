@@ -11,8 +11,8 @@ COPY . .
 WORKDIR /app/WarOfMachinesAPI
 
 # Відновлення й публікація
-RUN dotnet restore WarOfMachinesAPI.csproj
-RUN dotnet publish WarOfMachinesAPI.csproj -c Release -o /app/out /p:UseAppHost=false
+RUN dotnet restore KnightsApi.csproj
+RUN dotnet publish KnightsApi.csproj -c Release -o /app/out /p:UseAppHost=false
 
 # --------------------------
 # Runtime stage
@@ -26,5 +26,5 @@ COPY --from=build /app/out ./
 ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT}
 EXPOSE 10000
 
-# УВАГА: назва DLL з логів publish — WarOfMachines.dll
-ENTRYPOINT ["dotnet", "WarOfMachines.dll"]
+# УВАГА: назва DLL з логів publish — KnightsApi.dll
+ENTRYPOINT ["dotnet", "KnightsApi.dll"]
