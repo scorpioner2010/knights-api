@@ -29,8 +29,7 @@ namespace KnightsApi.Data
             if (!db.Maps.Any())
             {
                 db.Maps.AddRange(
-                    new Map { Code = "jousting_field", Name = "Jousting Field", Description = "Training ground for new recruits — open, flat field for drills and contests." },
-                    new Map { Code = "tournament_grounds", Name = "Tournament Grounds", Description = "Large tournament arena with earthworks and spectator stands." }
+                    new Map { Code = "default_map", Name = "default map", Description = "test map" }
                 );
                 db.SaveChanges();
             }
