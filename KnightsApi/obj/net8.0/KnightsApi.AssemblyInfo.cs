@@ -12,7 +12,7 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("KnightsApi")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6afc08e877c27d04c5a0cf4a3fadfcd95cd24282")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d32f91a2d89fa3859ef428a0b03b98794bd3cf39")]
 [assembly: System.Reflection.AssemblyProductAttribute("KnightsApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KnightsApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

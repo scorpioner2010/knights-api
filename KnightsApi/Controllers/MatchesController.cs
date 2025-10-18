@@ -160,7 +160,7 @@ namespace KnightsApi.Controllers
             int mmrDelta = (int)Math.Round(MmrK * (score - expected), MidpointRounding.AwayFromZero);
             mmrDelta = Math.Clamp(mmrDelta, MmrCapLoss, MmrCapGain);
 
-            var mp = new MatchParticipant
+            MatchParticipant mp = new MatchParticipant
             {
                 MatchId = match.Id,
                 UserId = userId,

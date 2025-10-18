@@ -10,11 +10,11 @@ namespace KnightsApi.Data
         public DbSet<Player> Players => Set<Player>();
         public DbSet<Warrior> Warriors => Set<Warrior>();
         public DbSet<UserWarrior> UserWarriors => Set<UserWarrior>();
+        public DbSet<UserUnlockedWarrior> UserUnlockedWarriors => Set<UserUnlockedWarrior>();
         public DbSet<Match> Matches => Set<Match>();
         public DbSet<MatchParticipant> MatchParticipants => Set<MatchParticipant>();
         public DbSet<Culture> Cultures => Set<Culture>();
         public DbSet<Map> Maps => Set<Map>();
-
         public DbSet<WarriorResearchRequirement> WarriorResearchRequirements => Set<WarriorResearchRequirement>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -35,9 +35,13 @@ namespace KnightsApi.Data
             modelBuilder.Entity<Warrior>().HasIndex(v => v.Code).IsUnique();
             modelBuilder.Entity<Warrior>().Property(v => v.Code).IsRequired();
             modelBuilder.Entity<Warrior>().Property(v => v.Name).IsRequired();
-            modelBuilder.Entity<Warrior>().HasOne(v => v.Culture).WithMany().HasForeignKey(v => v.CultureId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Warrior>()
+                .HasOne(v => v.Culture)
+                .WithMany()
+                .HasForeignKey(v => v.CultureId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // WarriorResearchRequirement (предок -> нащадок; ResearchFrom прив'язане до Successor)
+            // WarriorResearchRequirement (predecessor -> successor)
             modelBuilder.Entity<Warrior>()
                 .HasMany(v => v.ResearchFrom)
                 .WithOne(r => r.Successor)
@@ -51,12 +55,12 @@ namespace KnightsApi.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<WarriorResearchRequirement>()
-                .HasIndex(r => new { PredecessorWarriorId = r.PredecessorWarriorId, SuccessorWarriorId = r.SuccessorWarriorId })
+                .HasIndex(r => new { r.PredecessorWarriorId, r.SuccessorWarriorId })
                 .IsUnique();
 
-            // UserWarrior
+            // UserWarrior (owned)
             modelBuilder.Entity<UserWarrior>()
-                .HasIndex(uv => new { uv.UserId, WarriorId = uv.WarriorId }).IsUnique();
+                .HasIndex(uv => new { uv.UserId, uv.WarriorId }).IsUnique();
 
             modelBuilder.Entity<UserWarrior>()
                 .HasIndex(nameof(UserWarrior.UserId), nameof(UserWarrior.IsActive))
@@ -73,6 +77,23 @@ namespace KnightsApi.Data
                 .HasOne(uv => uv.Warrior)
                 .WithMany()
                 .HasForeignKey(uv => uv.WarriorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // UserUnlockedWarrior (researched/unlocked)
+            modelBuilder.Entity<UserUnlockedWarrior>()
+                .HasIndex(x => new { x.UserId, x.WarriorId })
+                .IsUnique();
+
+            modelBuilder.Entity<UserUnlockedWarrior>()
+                .HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserUnlockedWarrior>()
+                .HasOne(x => x.Warrior)
+                .WithMany()
+                .HasForeignKey(x => x.WarriorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // MatchParticipant
@@ -95,14 +116,9 @@ namespace KnightsApi.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Map
-            modelBuilder.Entity<Map>()
-                .HasIndex(m => m.Code)
-                .IsUnique();
-
-            modelBuilder.Entity<Map>()
-                .Property(m => m.Code).IsRequired();
-            modelBuilder.Entity<Map>()
-                .Property(m => m.Name).IsRequired();
+            modelBuilder.Entity<Map>().HasIndex(m => m.Code).IsUnique();
+            modelBuilder.Entity<Map>().Property(m => m.Code).IsRequired();
+            modelBuilder.Entity<Map>().Property(m => m.Name).IsRequired();
         }
     }
 }
